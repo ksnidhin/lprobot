@@ -633,7 +633,17 @@ def _extract_media(msg: Message) -> tuple[str, str, str] | None:
 # ---------------------------------------------------------------------------
 
 
+_seen_groups_cache = set()
+
 def update_bot_group(chat_id: int, title: str, username: str, is_active: int):
+    global _seen_groups_cache
+    if is_active == 1 and chat_id in _seen_groups_cache:
+        return
+    if is_active == 1:
+        _seen_groups_cache.add(chat_id)
+    elif chat_id in _seen_groups_cache:
+        _seen_groups_cache.discard(chat_id)
+
     with closing(sqlite3.connect(DB_FILE)) as conn:
         with closing(conn.cursor()) as c:
             c.execute(
