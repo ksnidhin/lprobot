@@ -58,6 +58,7 @@ from ai_handler import cmd_ai, check_auto_ai, cmd_speak, cmd_summary, cmd_roast
 from telegram.ext import (
     Application,
     CommandHandler,
+    ChatMemberHandler,
     ContextTypes,
     MessageHandler,
     TypeHandler,
