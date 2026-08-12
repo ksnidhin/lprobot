@@ -2101,13 +2101,13 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
         if query.message.caption:
             await query.edit_message_caption(
                 caption=_get_start_text(user),
-                reply_markup=_get_main_keyboard(),
+                reply_markup=_get_main_keyboard(user.id),
                 parse_mode=ParseMode.MARKDOWN
             )
         else:
             await query.edit_message_text(
                 text=_get_start_text(user),
-                reply_markup=_get_main_keyboard(),
+                reply_markup=_get_main_keyboard(user.id),
                 parse_mode=ParseMode.MARKDOWN
             )
         
