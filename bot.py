@@ -2041,19 +2041,20 @@ def _get_start_text(user) -> str:
         f"Choose an option below to get started."
     )
 
-def _get_main_keyboard() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
+def _get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
+    buttons = [
         [
-            InlineKeyboardButton("🤖 AI Features", callback_data="menu_ai"),
+            InlineKeyboardButton("✨ AI Features", callback_data="menu_ai"),
             InlineKeyboardButton("🛡️ Moderation", callback_data="menu_mod_1")
         ],
         [
             InlineKeyboardButton("⚙️ Settings", callback_data="menu_settings")
-        ],
-        [
-            InlineKeyboardButton("❌ Close", callback_data="menu_close")
         ]
-    ])
+    ]
+    if _is_owner(user_id):
+        buttons.append([InlineKeyboardButton("📂 Active Groups", callback_data="menu_groups_0")])
+    buttons.append([InlineKeyboardButton("❌ Close", callback_data="menu_close")])
+    return InlineKeyboardMarkup(buttons)
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/start - Interactive rich menu."""
