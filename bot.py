@@ -72,7 +72,8 @@ from telegram.ext import (
 load_dotenv()
 
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-OWNER_ID: int = int(os.getenv("OWNER_ID", "0"))
+owners_str = os.getenv("OWNERS", "")
+OWNER_IDS = [int(x.strip()) for x in owners_str.split(",") if x.strip()]
 LOG_CHAT_ID: int | None = (
     int(os.getenv("LOG_CHAT_ID")) if os.getenv("LOG_CHAT_ID") else None
 )
@@ -81,8 +82,8 @@ SQLITE_PATH = "data/bot_data.db"
 
 if not BOT_TOKEN:
     sys.exit("ERROR: BOT_TOKEN is not set. Check your .env file.")
-if not OWNER_ID:
-    sys.exit("ERROR: OWNER_ID is not set. Check your .env file.")
+if not OWNER_IDS:
+    sys.exit("ERROR: OWNERS is not set in .env file.")
 if False: # if not DATABASE_URL:
     sys.exit(
         "ERROR: DATABASE_URL is not set. Check your .env file. "
@@ -324,6 +325,13 @@ CREATE TABLE IF NOT EXISTS ban_queue (
     chat_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
     PRIMARY KEY (chat_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS bot_groups (
+    chat_id INTEGER PRIMARY KEY,
+    title TEXT,
+    username TEXT,
+    is_active INTEGER DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS bot_settings (
@@ -624,9 +632,25 @@ def _extract_media(msg: Message) -> tuple[str, str, str] | None:
 # ---------------------------------------------------------------------------
 
 
+def update_bot_group(chat_id: int, title: str, username: str, is_active: int):
+    with closing(sqlite3.connect(DB_FILE)) as conn:
+        with closing(conn.cursor()) as c:
+            c.execute(
+                "INSERT INTO bot_groups (chat_id, title, username, is_active) VALUES (?, ?, ?, ?) "
+                "ON CONFLICT(chat_id) DO UPDATE SET title=excluded.title, username=excluded.username, is_active=excluded.is_active",
+                (chat_id, title, username, is_active)
+            )
+        conn.commit()
+
+def get_active_bot_groups():
+    with closing(sqlite3.connect(DB_FILE)) as conn:
+        with closing(conn.cursor()) as c:
+            c.execute("SELECT chat_id, title, username FROM bot_groups WHERE is_active=1 ORDER BY title")
+            return c.fetchall()
+
 def _is_owner(user_id: int) -> bool:
     """Return True if *user_id* is the bot owner."""
-    return user_id == OWNER_ID
+    return user_id in OWNER_IDS
 
 
 def _is_authorized_mod(user_id: int) -> bool:
@@ -2037,7 +2061,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
         
     text = _get_start_text(msg.from_user)
-    keyboard = _get_main_keyboard()
+    keyboard = _get_main_keyboard(msg.from_user.id)
     
     if start_banner_file_id:
         try:
@@ -2239,6 +2263,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("dsp", cmd_dsp))
     app.add_handler(CommandHandler("bl", cmd_bl))
     app.add_handler(CommandHandler("en", cmd_en))
+    app.add_handler(ChatMemberHandler(chat_member_update, ChatMemberHandler.MY_CHAT_MEMBER))
 
     # Media tracking / enforcement — catches any message containing
     # supported media types, in groups and supergroups. Also runs
@@ -2264,6 +2289,22 @@ def build_application() -> Application:
 
     return app
 
+
+
+async def chat_member_update(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Track bot being added or removed from groups."""
+    result = update.my_chat_member
+    if not result:
+        return
+    chat = result.chat
+    if chat.type not in ["group", "supergroup"]:
+        return
+    
+    status = result.new_chat_member.status
+    if status in ["kicked", "left"]:
+        update_bot_group(chat.id, chat.title, chat.username, 0)
+    elif status in ["member", "administrator"]:
+        update_bot_group(chat.id, chat.title, chat.username, 1)
 
 def main() -> None:
     logger.info("Starting Telegram Media Moderation Bot (demo_mode=%s)", DEMO_MODE)
