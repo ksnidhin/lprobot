@@ -28,10 +28,10 @@ model_cooldowns = {}
 MODEL_COOLDOWN_DURATION = 600  # 10 minutes window before trying top model again
 
 TEXT_MODELS_GROQ = [
-    "llama-3.3-70b-versatile",  # Best model (70B)
-    "llama-3.1-8b-instant",     # Second best (Fast & high limit)
-    "mixtral-8x7b-32768",       # Third best (Mixtral 8x7B)
-    "gemma2-9b-it"              # Fourth best (Gemma 2 9B)
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.6-27b",
+    "groq/compound"
 ]
 
 
@@ -109,7 +109,7 @@ async def is_disrespectful(text: str) -> bool:
     if groq_client:
         try:
             completion = await groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="openai/gpt-oss-20b",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.1,
                 max_completion_tokens=5,
@@ -400,7 +400,7 @@ async def cmd_summary(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     summary = await generate_ai_response(
         summary_history,
         override_system_prompt="You are a helpful and detailed summarization AI. Your job is to provide clear, comprehensive, and objective summaries of conversations.",
-        force_model="llama-3.1-8b-instant"
+        force_model="openai/gpt-oss-20b"
     )
     await msg.reply_text(f"📝 **Chat Summary:**\n\n{summary}", parse_mode="Markdown")
 
@@ -526,7 +526,7 @@ async def generate_ai_response(history: list[dict], base64_image: str = None, is
     # Function calling tool execution (Groq)
     if tools and groq_client:
         try:
-            model = "llama-3.1-8b-instant"
+            model = "openai/gpt-oss-20b"
             groq_messages = [{"role": "system", "content": system_prompt}]
             for msg in history:
                 role = "user" if msg["role"] == "user" else "assistant"
