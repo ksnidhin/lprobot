@@ -73,7 +73,7 @@ from telegram.ext import (
 load_dotenv()
 
 BOT_TOKEN: str = os.getenv("BOT_TOKEN", "")
-owners_str = os.getenv("OWNERS", "")
+owners_str = os.getenv("OWNERS") or os.getenv("OWNER_ID", "")
 OWNER_IDS = [int(x.strip()) for x in owners_str.split(",") if x.strip()]
 LOG_CHAT_ID: int | None = (
     int(os.getenv("LOG_CHAT_ID")) if os.getenv("LOG_CHAT_ID") else None
@@ -84,7 +84,7 @@ SQLITE_PATH = "data/bot_data.db"
 if not BOT_TOKEN:
     sys.exit("ERROR: BOT_TOKEN is not set. Check your .env file.")
 if not OWNER_IDS:
-    sys.exit("ERROR: OWNERS is not set in .env file.")
+    sys.exit("ERROR: OWNERS or OWNER_ID is not set in .env file.")
 if False: # if not DATABASE_URL:
     sys.exit(
         "ERROR: DATABASE_URL is not set. Check your .env file. "
