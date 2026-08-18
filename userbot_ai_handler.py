@@ -217,12 +217,24 @@ async def cmd_speak(client: Client, msg: Message) -> None:
     """/speak <prompt> command for voice response"""
         
     if global_grounded or msg.chat.id in grounded_chats:
-        await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        try:
+            await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "🛑 AI features are currently grounded in this chat.")
+            except:
+                pass
         return
         
     prompt = " ".join((msg.command[1:] if hasattr(msg, "command") and msg.command else [])) if (msg.command[1:] if hasattr(msg, "command") and msg.command else []) else ""
     if not prompt:
-        await msg.reply_text("Please provide a prompt: `/speak tell me a joke`", parse_mode="Markdown")
+        try:
+            await msg.reply_text("Please provide a prompt: `/speak tell me a joke`", parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "Please provide a prompt: `/speak tell me a joke`", parse_mode=ParseMode.MARKDOWN)
+            except:
+                pass
         return
         
     
@@ -244,7 +256,13 @@ async def cmd_speak(client: Client, msg: Message) -> None:
     
     # Convert to speech
     if not groq_client:
-        await msg.reply_text("TTS requires Groq API which is currently unavailable.")
+        try:
+            await msg.reply_text("TTS requires Groq API which is currently unavailable.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "TTS requires Groq API which is currently unavailable.")
+            except:
+                pass
         return
         
     try:
@@ -272,7 +290,13 @@ async def cmd_speak(client: Client, msg: Message) -> None:
                 raise Exception(f"API Error {resp.status_code}: {resp.text}")
     except Exception as e:
         logger.error(f"TTS error: {e}")
-        await msg.reply_text(f"Voice generation failed: {e}\n\nHere is the text instead:\n{reply_text}")
+        try:
+            await msg.reply_text(f"Voice generation failed: {e}\n\nHere is the text instead:\n{reply_text}")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, f"Voice generation failed: {e}\n\nHere is the text instead:\n{reply_text}")
+            except:
+                pass
 
 
 async def _log_ai_usage(client, msg, prompt, reply):
@@ -385,11 +409,23 @@ async def cmd_summary(client: Client, msg: Message) -> None:
     chat_id = msg.chat.id
     
     if global_grounded or chat_id in grounded_chats:
-        await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        try:
+            await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "🛑 AI features are currently grounded in this chat.")
+            except:
+                pass
         return
         
     if chat_id not in chat_histories or not chat_histories[chat_id]:
-        await msg.reply_text("No recent conversation history to summarize yet.")
+        try:
+            await msg.reply_text("No recent conversation history to summarize yet.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "No recent conversation history to summarize yet.")
+            except:
+                pass
         return
         
     summary_history = [
@@ -400,13 +436,25 @@ async def cmd_summary(client: Client, msg: Message) -> None:
         override_system_prompt="You are a helpful and detailed summarization AI. Your job is to provide clear, comprehensive, and objective summaries of conversations.",
         force_model="openai/gpt-oss-20b"
     )
-    await msg.reply_text(f"📝 **Chat Summary:**\n\n{summary}", parse_mode="Markdown")
+    try:
+        await msg.reply_text(f"📝 **Chat Summary:**\n\n{summary}", parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        try:
+            await client.send_message(msg.chat.id, f"📝 **Chat Summary:**\n\n{summary}", parse_mode=ParseMode.MARKDOWN)
+        except:
+            pass
 
 async def cmd_roast(client: Client, msg: Message) -> None:
     """Deliver a targeted roast to a user"""
     
     if global_grounded or msg.chat.id in grounded_chats:
-        await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        try:
+            await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "🛑 AI features are currently grounded in this chat.")
+            except:
+                pass
         return
         
     target_name = ""
@@ -421,7 +469,13 @@ async def cmd_roast(client: Client, msg: Message) -> None:
         {"role": "user", "content": f"Deliver a devastatingly funny, 1-sentence S-tier ragebait roast targeting {target_name}. Keep it casual, unbothered, and non-cringe."}
     ]
     roast = await generate_ai_response(roast_history)
-    await msg.reply_text(roast)
+    try:
+        await msg.reply_text(roast)
+    except Exception as e:
+        try:
+            await client.send_message(msg.chat.id, roast)
+        except:
+            pass
 
 async def execute_moderation_tool(client, msg, action: str, duration_minutes: int):
     from pyrogram.types import ChatPermissions
@@ -658,12 +712,24 @@ async def cmd_ai(client: Client, msg: Message) -> None:
     """/ai <prompt> command"""
         
     if global_grounded or msg.chat.id in grounded_chats:
-        await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        try:
+            await msg.reply_text("🛑 AI features are currently grounded in this chat.")
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "🛑 AI features are currently grounded in this chat.")
+            except:
+                pass
         return
         
     prompt = " ".join((msg.command[1:] if hasattr(msg, "command") and msg.command else [])) if (msg.command[1:] if hasattr(msg, "command") and msg.command else []) else ""
     if not prompt:
-        await msg.reply_text("Please provide a prompt: `/ai what is 2+2?`", parse_mode="Markdown")
+        try:
+            await msg.reply_text("Please provide a prompt: `/ai what is 2+2?`", parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            try:
+                await client.send_message(msg.chat.id, "Please provide a prompt: `/ai what is 2+2?`", parse_mode=ParseMode.MARKDOWN)
+            except:
+                pass
         return
         
     history = await _get_and_update_history(msg.chat.id, prompt)
@@ -677,7 +743,13 @@ async def cmd_ai(client: Client, msg: Message) -> None:
     is_owner = msg.from_user.id in owner_ids
     reply = await generate_ai_response(history, base64_image=img, is_owner=is_owner, client=client, msg=msg)
     await _append_ai_response(msg.chat.id, reply)
-    await msg.reply_text(reply)
+    try:
+        await msg.reply_text(reply)
+    except Exception as e:
+        try:
+            await client.send_message(msg.chat.id, reply)
+        except:
+            pass
 
 async def check_auto_ai(client: Client, msg: Message) -> None:
     """Check if we should auto-reply to a question."""
@@ -720,7 +792,13 @@ async def check_auto_ai(client: Client, msg: Message) -> None:
         if is_suspiciously_long or has_jailbreak_keyword:
             roast = "nice try with the jailbreak script lil bro. maybe take a cybersecurity course before trying to hack a telegram bot 💀 womp womp"
             await _append_ai_response(chat_id, roast)
-            await msg.reply_text(roast)
+            try:
+                await msg.reply_text(roast)
+            except Exception as e:
+                try:
+                    await client.send_message(msg.chat.id, roast)
+                except:
+                    pass
             await _log_ai_usage(client, msg, text, roast)
             return
             
@@ -731,7 +809,13 @@ async def check_auto_ai(client: Client, msg: Message) -> None:
             except:
                 pass
             await _append_ai_response(chat_id, roast)
-            await msg.reply_text(roast)
+            try:
+                await msg.reply_text(roast)
+            except Exception as e:
+                try:
+                    await client.send_message(msg.chat.id, roast)
+                except:
+                    pass
             await _log_ai_usage(client, msg, text, roast)
             return
     question_words = [
@@ -780,5 +864,11 @@ async def check_auto_ai(client: Client, msg: Message) -> None:
         voice_sent = await _send_voice_reply_if_needed(client, msg, reply, prompt, is_voice_input=is_voice_input)
         
         if not voice_sent:
-            await msg.reply_text(reply)
+            try:
+                await msg.reply_text(reply)
+            except Exception as e:
+                try:
+                    await client.send_message(msg.chat.id, reply)
+                except:
+                    pass
             await _log_ai_usage(client, msg, prompt, reply)
