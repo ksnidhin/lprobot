@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 
 # Import logic from the main bot
 from bot import LINK_REGEX, _normalize_for_link_scan
+from userbot_ai_handler import cmd_ai, cmd_speak, cmd_roast, cmd_summary, check_auto_ai
 
 load_dotenv()
 
@@ -138,6 +139,27 @@ async def cmd_banall(client: Client, message: Message):
     except Exception as e:
         logger.error(f"Error in /banall: {e}")
         await status_msg.edit_text(f"Error fetching members: {e}")
+
+
+@app.on_message(filters.command("ai", prefixes="/") & filters.me)
+async def ai_handler(client, message):
+    await cmd_ai(client, message)
+
+@app.on_message(filters.command("speak", prefixes="/") & filters.me)
+async def speak_handler(client, message):
+    await cmd_speak(client, message)
+
+@app.on_message(filters.command("roast", prefixes="/") & filters.me)
+async def roast_handler(client, message):
+    await cmd_roast(client, message)
+
+@app.on_message(filters.command("summary", prefixes="/") & filters.me)
+async def summary_handler(client, message):
+    await cmd_summary(client, message)
+
+@app.on_message(filters.text & ~filters.me, group=1)
+async def auto_ai_handler(client, message):
+    await check_auto_ai(client, message)
 
 if __name__ == "__main__":
     app.loop.run_until_complete(setup_db())
