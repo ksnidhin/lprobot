@@ -141,19 +141,32 @@ async def cmd_banall(client: Client, message: Message):
         await status_msg.edit_text(f"Error fetching members: {e}")
 
 
-@app.on_message(filters.command("ai", prefixes="/") & filters.me)
+
+@app.on_message(filters.command("start", prefixes="/"))
+async def start_handler(client, message):
+    text = (
+        "🤖 **LaluBot (Userbot Mode)**\n\n"
+        "This account is powered by AI. You can talk to me naturally, or use these commands:\n\n"
+        "🎙️ `/speak <prompt>` - Generate a voice message\n"
+        "🔥 `/roast` - Roast someone\n"
+        "🧠 `/ai <prompt>` - Ask a direct question\n"
+        "📜 `/summary` - Summarize recent chat"
+    )
+    await message.reply_text(text)
+
+@app.on_message(filters.command("ai", prefixes="/"))
 async def ai_handler(client, message):
     await cmd_ai(client, message)
 
-@app.on_message(filters.command("speak", prefixes="/") & filters.me)
+@app.on_message(filters.command("speak", prefixes="/"))
 async def speak_handler(client, message):
     await cmd_speak(client, message)
 
-@app.on_message(filters.command("roast", prefixes="/") & filters.me)
+@app.on_message(filters.command("roast", prefixes="/"))
 async def roast_handler(client, message):
     await cmd_roast(client, message)
 
-@app.on_message(filters.command("summary", prefixes="/") & filters.me)
+@app.on_message(filters.command("summary", prefixes="/"))
 async def summary_handler(client, message):
     await cmd_summary(client, message)
 

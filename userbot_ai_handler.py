@@ -747,7 +747,7 @@ async def check_auto_ai(client: Client, msg: Message) -> None:
     # Reply heuristic
     is_reply_to_bot = msg.reply_to_message and msg.reply_to_message.from_user and msg.reply_to_message.from_user.id == client.me.id
 
-    if is_mention or is_reply_to_bot or is_question or msg.chat.type == 'private':
+    if is_mention or is_reply_to_bot or is_question or msg.chat.type.name == 'PRIVATE':
         now = time.time()
         if chat_id in last_auto_reply and now - last_auto_reply[chat_id] < AUTO_REPLY_COOLDOWN:
             if not (is_mention or is_reply_to_bot):
