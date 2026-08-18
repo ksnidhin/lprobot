@@ -2096,6 +2096,85 @@ async def button_callback_handler(update: Update, context: ContextTypes.DEFAULT_
     if data == "menu_close":
         await query.message.delete()
         return
+
+    elif data.startswith("menu_groups_"):
+        if not _is_owner(query.from_user.id):
+            await query.answer("Owner only.", show_alert=True)
+            return
+        page = int(data.split("_")[2])
+        groups = get_active_bot_groups()
+        per_page = 10
+        total_pages = max(1, (len(groups) + per_page - 1) // per_page)
+        start_idx = page * per_page
+        end_idx = start_idx + per_page
+        page_groups = groups[start_idx:end_idx]
+        
+        text = f"📂 **Active Groups** (Page {page+1}/{total_pages})\n\nSelect a group to manage:"
+        keyboard_buttons = []
+        for chat_id, title, username in page_groups:
+            display_title = title if title else str(chat_id)
+            keyboard_buttons.append([InlineKeyboardButton(display_title, callback_data=f"group_view_{chat_id}")])
+            
+        nav_buttons = []
+        if page > 0:
+            nav_buttons.append(InlineKeyboardButton("⬅️ Prev", callback_data=f"menu_groups_{page-1}"))
+        if page < total_pages - 1:
+            nav_buttons.append(InlineKeyboardButton("Next ➡️", callback_data=f"menu_groups_{page+1}"))
+            
+        if nav_buttons:
+            keyboard_buttons.append(nav_buttons)
+        keyboard_buttons.append([InlineKeyboardButton("🔙 Back", callback_data="menu_main")])
+        
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard_buttons), parse_mode=ParseMode.MARKDOWN)
+
+    elif data.startswith("group_view_"):
+        if not _is_owner(query.from_user.id):
+            await query.answer("Owner only.", show_alert=True)
+            return
+        chat_id = int(data.split("group_view_")[1])
+        groups = get_active_bot_groups()
+        group_info = next((g for g in groups if g[0] == chat_id), None)
+        if not group_info:
+            await query.answer("Group not found.", show_alert=True)
+            return
+            
+        title = group_info[1]
+        username = group_info[2]
+        
+        text = f"ℹ️ **Group Info**\n\n**Title:** {title}\n**ID:** `{chat_id}`"
+        if username:
+            text += f"\n**Username:** @{username}"
+            
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🚪 Leave Group", callback_data=f"group_leave_{chat_id}")],
+            [InlineKeyboardButton("🔙 Back to Groups", callback_data="menu_groups_0")]
+        ])
+        await query.edit_message_text(text=text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN)
+
+    elif data.startswith("group_leave_"):
+        if not _is_owner(query.from_user.id):
+            await query.answer("Owner only.", show_alert=True)
+            return
+        chat_id = int(data.split("group_leave_")[1])
+        try:
+            await context.bot.leave_chat(chat_id)
+            update_bot_group(chat_id, "", "", 0)
+            await query.answer("Left group successfully.", show_alert=True)
+            # Go back to page 1
+            groups = get_active_bot_groups()
+            per_page = 10
+            total_pages = max(1, (len(groups) + per_page - 1) // per_page)
+            text = f"📂 **Active Groups** (Page 1/{total_pages})\n\nSelect a group to manage:"
+            keyboard_buttons = []
+            for cid, title, username in groups[:10]:
+                display_title = title if title else str(cid)
+                keyboard_buttons.append([InlineKeyboardButton(display_title, callback_data=f"group_view_{cid}")])
+            if total_pages > 1:
+                keyboard_buttons.append([InlineKeyboardButton("Next ➡️", callback_data="menu_groups_1")])
+            keyboard_buttons.append([InlineKeyboardButton("🔙 Back", callback_data="menu_main")])
+            await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard_buttons), parse_mode=ParseMode.MARKDOWN)
+        except Exception as e:
+            await query.answer(f"Failed to leave: {e}", show_alert=True)
         
     elif data == "menu_main":
         if query.message.caption:
