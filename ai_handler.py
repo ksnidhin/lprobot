@@ -696,6 +696,8 @@ async def check_auto_ai(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         return
         
     text = msg.text.strip() if msg.text else (msg.caption.strip() if msg.caption else "")
+    if text.startswith("/"):
+        return
     chat_id = msg.chat_id
     
     sticker_prompt, sticker_img = await _extract_sticker_or_gif_prompt(msg)

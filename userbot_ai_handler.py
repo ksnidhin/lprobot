@@ -757,6 +757,8 @@ async def check_auto_ai(client: Client, msg: Message) -> None:
         return
         
     text = msg.text.strip() if msg.text else (msg.caption.strip() if msg.caption else "")
+    if text.startswith("/"):
+        return
     chat_id = msg.chat.id
     
     sticker_prompt, sticker_img = await _extract_sticker_or_gif_prompt(msg)
