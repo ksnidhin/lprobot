@@ -328,7 +328,16 @@ CREATE TABLE IF NOT EXISTS ban_queue (
     PRIMARY KEY (chat_id, user_id)
 );
 
-CREATE TABLE IF NOT EXISTS bot_groups (
+
+        # Migrate bot_groups if necessary
+        c.execute("PRAGMA table_info(bot_groups)")
+        columns = [info[1] for info in c.fetchall()]
+        if columns and "username" not in columns:
+            c.execute("ALTER TABLE bot_groups ADD COLUMN username TEXT")
+        if columns and "is_active" not in columns:
+            c.execute("ALTER TABLE bot_groups ADD COLUMN is_active INTEGER DEFAULT 1")
+
+        CREATE TABLE IF NOT EXISTS bot_groups (
     chat_id INTEGER PRIMARY KEY,
     title TEXT,
     username TEXT,
@@ -1047,15 +1056,15 @@ async def on_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     if msg is None:
         return
     # Auto-discover existing groups
-    if msg.chat.type in ["group", "supergroup"]:
+    if msg.chat.type in [ChatType.GROUP, ChatType.SUPERGROUP]:
         try:
             conn = sqlite3.connect("data/bot_data.db")
             c = conn.cursor()
             c.execute("INSERT OR IGNORE INTO bot_groups (chat_id, title) VALUES (?, ?)", (msg.chat_id, msg.chat.title))
             conn.commit()
             conn.close()
-        except:
-            pass
+        except Exception as e:
+            logger.error(f"Auto-discover DB error: {e}")
     if await _enforce_link_blacklist(msg, context):
         return
 
