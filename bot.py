@@ -2067,8 +2067,10 @@ def _get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(buttons)
 
 
+
+
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Owner only: Broadcast a replied-to message to all active groups."""
+    """Owner only: Broadcast a message to all active groups."""
     msg = update.effective_message
     if not msg:
         return
@@ -2080,8 +2082,11 @@ async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if msg.from_user.id not in owner_ids:
         return
 
-    if not msg.reply_to_message:
-        await msg.reply_text("?? You must reply to the ad/message you want to broadcast with /broadcast.")
+    text_to_send = " ".join(context.args) if context.args else ""
+    is_reply = bool(msg.reply_to_message)
+
+    if not is_reply and not text_to_send:
+        await msg.reply_text("?? You must either reply to a message with /broadcast, or type your message like `/broadcast hello`.", parse_mode="Markdown")
         return
 
     status_msg = await msg.reply_text("?? Starting broadcast... This will take a while.")
@@ -2089,7 +2094,7 @@ async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     try:
         conn = sqlite3.connect("data/bot_data.db")
         cursor = conn.cursor()
-        cursor.execute("SELECT group_id FROM active_groups")
+        cursor.execute("SELECT chat_id FROM bot_groups")
         groups = cursor.fetchall()
         conn.close()
     except Exception as e:
@@ -2105,11 +2110,14 @@ async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     for (group_id,) in groups:
         try:
-            await context.bot.copy_message(
-                chat_id=group_id,
-                from_chat_id=msg.chat_id,
-                message_id=msg.reply_to_message.message_id
-            )
+            if is_reply:
+                await context.bot.copy_message(
+                    chat_id=group_id,
+                    from_chat_id=msg.chat_id,
+                    message_id=msg.reply_to_message.message_id
+                )
+            else:
+                await context.bot.send_message(chat_id=group_id, text=text_to_send)
             success_count += 1
         except Exception as e:
             fail_count += 1
@@ -2118,14 +2126,13 @@ async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
                 try:
                     conn = sqlite3.connect("data/bot_data.db")
                     c = conn.cursor()
-                    c.execute("DELETE FROM active_groups WHERE group_id = ?", (group_id,))
+                    c.execute("DELETE FROM bot_groups WHERE chat_id = ?", (group_id,))
                     conn.commit()
                     conn.close()
                 except:
                     pass
         
-        # Safe delay
-        await asyncio.sleep(3)
+        await asyncio.sleep(2)
 
     await status_msg.edit_text(f"✅ **Broadcast Complete!**\n\n?? **Sent to:** {success_count} groups\n❌ **Failed/Removed:** {fail_count} groups", parse_mode="Markdown")
 
@@ -2390,7 +2397,9 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("free", cmd_free))
     app.add_handler(CommandHandler("uground", cmd_ground_global))
     app.add_handler(CommandHandler("ufree", cmd_unground_global))
+    
     app.add_handler(CommandHandler("broadcast", cmd_broadcast))
+    app.add_handler(CommandHandler("br", cmd_broadcast))
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("setbanner", cmd_setbanner))
     app.add_handler(CommandHandler("rmb", cmd_rmbanner))
