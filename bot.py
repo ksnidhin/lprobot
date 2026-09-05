@@ -329,14 +329,6 @@ CREATE TABLE IF NOT EXISTS ban_queue (
 );
 
 
-        # Migrate bot_groups if necessary
-        c.execute("PRAGMA table_info(bot_groups)")
-        columns = [info[1] for info in c.fetchall()]
-        if columns and "username" not in columns:
-            c.execute("ALTER TABLE bot_groups ADD COLUMN username TEXT")
-        if columns and "is_active" not in columns:
-            c.execute("ALTER TABLE bot_groups ADD COLUMN is_active INTEGER DEFAULT 1")
-
         CREATE TABLE IF NOT EXISTS bot_groups (
     chat_id INTEGER PRIMARY KEY,
     title TEXT,
@@ -372,6 +364,15 @@ async def db_init_schema() -> None:
     """Create all tables if they don't already exist."""
     assert db_conn is not None
     await db_conn.executescript(_SCHEMA_SQL)
+    
+    # Migrate bot_groups if necessary
+    async with db_conn.execute("PRAGMA table_info(bot_groups)") as cursor:
+        columns = [row[1] for row in await cursor.fetchall()]
+        if columns and "username" not in columns:
+            await db_conn.execute("ALTER TABLE bot_groups ADD COLUMN username TEXT")
+        if columns and "is_active" not in columns:
+            await db_conn.execute("ALTER TABLE bot_groups ADD COLUMN is_active INTEGER DEFAULT 1")
+            
     await db_conn.commit()
     import logging
     logging.getLogger("modbot").info("Database schema ready.")
