@@ -2066,6 +2066,69 @@ def _get_main_keyboard(user_id: int) -> InlineKeyboardMarkup:
     buttons.append([InlineKeyboardButton("❌ Close", callback_data="menu_close")])
     return InlineKeyboardMarkup(buttons)
 
+
+async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Owner only: Broadcast a replied-to message to all active groups."""
+    msg = update.effective_message
+    if not msg:
+        return
+    
+    import os
+    import asyncio
+    owners_str = os.getenv("OWNERS") or os.getenv("OWNER_ID", "")
+    owner_ids = [int(x.strip()) for x in owners_str.split(",") if x.strip()]
+    if msg.from_user.id not in owner_ids:
+        return
+
+    if not msg.reply_to_message:
+        await msg.reply_text("?? You must reply to the ad/message you want to broadcast with /broadcast.")
+        return
+
+    status_msg = await msg.reply_text("?? Starting broadcast... This will take a while.")
+    
+    try:
+        conn = sqlite3.connect("data/bot_data.db")
+        cursor = conn.cursor()
+        cursor.execute("SELECT group_id FROM active_groups")
+        groups = cursor.fetchall()
+        conn.close()
+    except Exception as e:
+        await status_msg.edit_text(f"DB Error: {e}")
+        return
+
+    if not groups:
+        await status_msg.edit_text("?? Bot is not active in any groups.")
+        return
+
+    success_count = 0
+    fail_count = 0
+
+    for (group_id,) in groups:
+        try:
+            await context.bot.copy_message(
+                chat_id=group_id,
+                from_chat_id=msg.chat_id,
+                message_id=msg.reply_to_message.message_id
+            )
+            success_count += 1
+        except Exception as e:
+            fail_count += 1
+            err_str = str(e).lower()
+            if "kicked" in err_str or "not found" in err_str or "forbidden" in err_str:
+                try:
+                    conn = sqlite3.connect("data/bot_data.db")
+                    c = conn.cursor()
+                    c.execute("DELETE FROM active_groups WHERE group_id = ?", (group_id,))
+                    conn.commit()
+                    conn.close()
+                except:
+                    pass
+        
+        # Safe delay
+        await asyncio.sleep(3)
+
+    await status_msg.edit_text(f"✅ **Broadcast Complete!**\n\n?? **Sent to:** {success_count} groups\n❌ **Failed/Removed:** {fail_count} groups", parse_mode="Markdown")
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """/start - Interactive rich menu."""
     msg = update.effective_message
@@ -2327,6 +2390,7 @@ def build_application() -> Application:
     app.add_handler(CommandHandler("free", cmd_free))
     app.add_handler(CommandHandler("uground", cmd_ground_global))
     app.add_handler(CommandHandler("ufree", cmd_unground_global))
+    app.add_handler(CommandHandler("broadcast", cmd_broadcast))
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("setbanner", cmd_setbanner))
     app.add_handler(CommandHandler("rmb", cmd_rmbanner))
