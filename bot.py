@@ -1046,6 +1046,16 @@ async def on_text_message(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     msg = update.effective_message
     if msg is None:
         return
+    # Auto-discover existing groups
+    if msg.chat.type in ["group", "supergroup"]:
+        try:
+            conn = sqlite3.connect("data/bot_data.db")
+            c = conn.cursor()
+            c.execute("INSERT OR IGNORE INTO bot_groups (chat_id, title) VALUES (?, ?)", (msg.chat_id, msg.chat.title))
+            conn.commit()
+            conn.close()
+        except:
+            pass
     if await _enforce_link_blacklist(msg, context):
         return
 
